@@ -1,8 +1,15 @@
 package main
 
-import "github.com/Abhishekkarunakaran/gyper/gyper"
+import (
+	"log"
+
+	"github.com/Abhishekkarunakaran/gyper/gyper"
+)
 
 func main() {
 	g := gyper.New()
-	g.Start("localhost","8888")
+	if err := g.Start("localhost","8888"); err != nil {
+		log.Fatal(err.Error())
+		g.Stop()
+	}
 }
