@@ -10,8 +10,9 @@ import (
 )
 
 type Job struct {
-	ID   uuid.UUID
-	conn net.Conn
+	ID      uuid.UUID
+	conn    net.Conn
+	Request *Request
 }
 
 type Gyper struct {
@@ -25,7 +26,7 @@ func New() (g *Gyper) {
 	jobCount := 100
 	return &Gyper{
 		jobChannel:  make(chan Job, jobCount),
-		workerCount: runtime.NumCPU()-2,
+		workerCount: runtime.NumCPU() - 2,
 	}
 }
 
@@ -70,28 +71,28 @@ func (g *Gyper) Start(ipAddr string, port string) error {
 		g.wg.Add(1)
 		go g.worker()
 	}
-	
+
 	g.wg.Wait()
 	return nil
 }
 
-
 func (g *Gyper) worker() {
 	defer g.wg.Done()
 	for job := range g.jobChannel {
-		defaultFunc(job.conn, job.ID.String())
+		job.Request = NewRequest(job.conn)
+		defaultFunc(job)
+		job.conn.Close()
 	}
 }
 
-func defaultFunc(conn net.Conn, content string) {
-	defer conn.Close()
+func defaultFunc(job Job) {
 
 	// time.Sleep(500 * time.Millisecond)
-	response := content + "\r\n"
-	conn.Write([]byte("HTTP/2 200 OK\r\n"))
-	conn.Write([]byte("Content-Length: " + fmt.Sprint(len(response)) + "\r\n"))
-	conn.Write([]byte("Content-Type: text/plain\r\n\r\n"))
-	conn.Write([]byte(response))
+	response := job.Request.Path + "\r\n"
+	job.conn.Write([]byte("HTTP/2 200 OK\r\n"))
+	job.conn.Write([]byte("Content-Length: " + fmt.Sprint(len(response)) + "\r\n"))
+	job.conn.Write([]byte("Content-Type: text/plain\r\n\r\n"))
+	job.conn.Write([]byte(response))
 
 }
 
@@ -104,5 +105,5 @@ func (g *Gyper) Stop() {
 			fmt.Printf("Error while closing listener: %v\n", err)
 		}
 	}
-	fmt.Printf("Number of goroutines:%v\n",runtime.NumGoroutine())
+	fmt.Printf("Number of goroutines:%v\n", runtime.NumGoroutine())
 }
