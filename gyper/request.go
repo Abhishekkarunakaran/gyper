@@ -40,25 +40,42 @@ const (
 	CONNECT Method = "CONNECT"
 )
 
+type Protocol string
+
+const (
+	HTTP1 Protocol = "HTTP/1.1"
+	HTTP2 Protocol = "HTTP/2" 
+)
+
+var protocolMap = map[string]Protocol{
+	"HTTP/1.1" : HTTP1,
+	"HTTP/2" : HTTP2,
+}
+
+func getProtocol(protocol string) Protocol {
+	return protocolMap[protocol]
+}
+
+var methodMap = map[string]Method{
+	"GET":     GET,
+	"POST":    POST,
+	"PUT":     PUT,
+	"PATCH":   PATCH,
+	"DELETE":  DELETE,
+	"HEAD":    HEAD,
+	"OPTIONS": OPTIONS,
+	"TRACE":   TRACE,
+	"CONNECT": CONNECT,
+}
+
 func getMethod(methodName string) Method {
-	methodMap := map[string]Method{
-		"GET":     GET,
-		"POST":    POST,
-		"PUT":     PUT,
-		"PATCH":   PATCH,
-		"DELETE":  DELETE,
-		"HEAD":    HEAD,
-		"OPTIONS": OPTIONS,
-		"TRACE":   TRACE,
-		"CONNECT": CONNECT,
-	}
 	return methodMap[methodName]
 }
 
 type Request struct {
 	Method   Method
 	Path     string
-	Protocol string
+	Protocol Protocol
 	Header   map[string]string
 	Body     io.Reader
 }
@@ -86,7 +103,7 @@ func NewRequest(conn net.Conn) *Request {
 			if len(parts) == 3 {
 				request.Method = getMethod(parts[0])
 				request.Path = parts[1]
-				request.Protocol = parts[2]
+				request.Protocol = getProtocol(parts[2])
 			}
 			firstLine = false
 			continue

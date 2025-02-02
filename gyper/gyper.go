@@ -1,14 +1,17 @@
 package gyper
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/gofrs/uuid"
 )
 
+type HandleFunc func()
 type Job struct {
 	ID      uuid.UUID
 	conn    net.Conn
@@ -20,6 +23,7 @@ type Gyper struct {
 	workerCount int
 	wg          sync.WaitGroup
 	listener    net.Listener
+	tree        node
 }
 
 func New() (g *Gyper) {
@@ -27,6 +31,7 @@ func New() (g *Gyper) {
 	return &Gyper{
 		jobChannel:  make(chan Job, jobCount),
 		workerCount: runtime.NumCPU() - 2,
+		tree:        node{},
 	}
 }
 
@@ -86,14 +91,23 @@ func (g *Gyper) worker() {
 }
 
 func defaultFunc(job Job) {
+	responseMap := map[string]string{
+		"timstamp": time.Now().UTC().String(),
+		"message":  "Method Not Found",
+	}
 
-	// time.Sleep(500 * time.Millisecond)
-	response := job.Request.Path + "\r\n"
-	job.conn.Write([]byte("HTTP/2 200 OK\r\n"))
+	response, _ := json.Marshal(responseMap)
+
+	switch job.Request.Protocol {
+	case HTTP1:
+		job.conn.Write([]byte("HTTP/1.1 404 Method Not Found\r\n"))
+	case HTTP2:
+		job.conn.Write([]byte("HTTP/2 404 Method Not Found\r\n"))
+	}
+
 	job.conn.Write([]byte("Content-Length: " + fmt.Sprint(len(response)) + "\r\n"))
-	job.conn.Write([]byte("Content-Type: text/plain\r\n\r\n"))
-	job.conn.Write([]byte(response))
-
+	job.conn.Write([]byte("Content-Type: application/json\r\n\r\n"))
+	job.conn.Write(response)
 }
 
 func (g *Gyper) Stop() {
