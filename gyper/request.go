@@ -44,12 +44,12 @@ type Protocol string
 
 const (
 	HTTP1 Protocol = "HTTP/1.1"
-	HTTP2 Protocol = "HTTP/2" 
+	HTTP2 Protocol = "HTTP/2"
 )
 
 var protocolMap = map[string]Protocol{
-	"HTTP/1.1" : HTTP1,
-	"HTTP/2" : HTTP2,
+	"HTTP/1.1": HTTP1,
+	"HTTP/2":   HTTP2,
 }
 
 func getProtocol(protocol string) Protocol {
