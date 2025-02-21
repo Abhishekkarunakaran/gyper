@@ -213,6 +213,9 @@ func (g *Gyper) add(path string, function HandleFunc, method Method) {
 		currentNode = nextNode
 
 		if len(pathList) == i+1 {
+			if currentNode.methods == nil {
+				currentNode.methods = make(map[Method]HandleFunc)
+			}
 			currentNode.methods[method] = function
 		}
 	}
@@ -222,6 +225,5 @@ func (g *Gyper) add(path string, function HandleFunc, method Method) {
 func getNewNode() *node {
 	return &node{
 		pathPoints: make(map[string]*node),
-		methods:    make(map[Method]HandleFunc),
 	}
 }
