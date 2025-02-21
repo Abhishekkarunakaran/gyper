@@ -27,15 +27,12 @@ func (p *Profile) String() string {
 	return fmt.Sprintf("\nname : %s, age : %d", p.Name, p.Age)
 }
 
-func run(g gyper.Context) {
-	fmt.Printf("method : %s\n", g.Request.Method)
-	fmt.Printf("path : %s\n", g.Request.Path)
-	fmt.Printf("headers : %v", g.Request.Header)
+func run(c gyper.Context) {
 	var profile Profile
-	if err := g.Bind(&profile); err != nil {
+	if err := c.Bind(&profile); err != nil {
 		fmt.Println(err.Error())
 	}
 
-	g.XML(http.StatusOK,profile)
+	_ = c.XML(http.StatusOK, profile)
 	fmt.Println(profile.String())
 }

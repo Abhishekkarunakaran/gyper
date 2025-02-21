@@ -16,7 +16,7 @@ type HandleFunc func(c Context)
 
 type Context struct {
 	conn    net.Conn
-	Request *Request
+	request *Request
 }
 
 type Job struct {
@@ -36,8 +36,8 @@ type Gyper struct {
 func New() (g *Gyper) {
 	jobCount := 100
 	return &Gyper{
-		jobChannel:  make(chan Job, jobCount),
-		workerCount: runtime.NumCPU(),
+		jobChannel:     make(chan Job, jobCount),
+		workerCount:    runtime.NumCPU(),
 		pathMethodTree: getNewNode(),
 	}
 }
@@ -76,7 +76,7 @@ func (g *Gyper) Start(ipAddr string, port string) error {
 			g.jobChannel <- Job{
 				ID: id,
 				context: Context{
-					conn: conn,
+					conn:   conn,
 				},
 			}
 		}
@@ -108,12 +108,10 @@ func (g *Gyper) GET(path string, function HandleFunc) {
 	g.add(path, function, GET)
 }
 
-
 // Method to register a handler function to a path as POST method
 func (g *Gyper) POST(path string, function HandleFunc) {
 	g.add(path, function, POST)
 }
-
 
 // Method to register a handler function to a path as PUT method
 func (g *Gyper) PUT(path string, function HandleFunc) {
@@ -134,7 +132,7 @@ func (g *Gyper) DELETE(path string, function HandleFunc) {
 func (g *Gyper) worker() {
 	defer g.wg.Done()
 	for job := range g.jobChannel {
-		job.context.Request = NewRequest(job.context.conn)
+		job.context.request = NewRequest(job.context.conn)
 		g.executeMethod(job.context)
 		_ = job.context.conn.Close()
 	}
@@ -143,7 +141,7 @@ func (g *Gyper) worker() {
 // Internal function that executes the handleFunc registered in the endpoint and method type.
 // If there's not function registered, it executes the defaultFunc
 func (g *Gyper) executeMethod(c Context) {
-	if function, exists := g.getFunction(c.Request.Path, c.Request.Method); !exists {
+	if function, exists := g.getFunction(c.request.Path, c.request.Method); !exists {
 		defaultFunc(c)
 	} else {
 		function(c)
@@ -180,7 +178,7 @@ func defaultFunc(c Context) {
 		"message": "Method Not Found",
 	}
 	response, _ := json.Marshal(responseMap)
-	switch c.Request.Protocol {
+	switch c.request.Protocol {
 	case HTTP1:
 		c.conn.Write([]byte("HTTP/1.1 404 Method Not Found\r\n"))
 	case HTTP2:
