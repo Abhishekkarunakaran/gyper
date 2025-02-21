@@ -10,8 +10,8 @@ import (
 
 func main() {
 	g := gyper.New()
-	g.GET("", run)
-	g.POST("/v1/private", run)
+	g.GET("/v1/private/profile", getValue)
+	g.POST("/v1/private/profile", save)
 	if err := g.Start("localhost", "8888"); err != nil {
 		log.Fatal(err.Error())
 		g.Stop()
@@ -27,15 +27,16 @@ func (p *Profile) String() string {
 	return fmt.Sprintf("\nname : %s, age : %d", p.Name, p.Age)
 }
 
-func run(g gyper.Context) {
-	fmt.Printf("method : %s\n", g.Request.Method)
-	fmt.Printf("path : %s\n", g.Request.Path)
-	fmt.Printf("headers : %v", g.Request.Header)
-	var profile Profile
-	if err := g.Bind(&profile); err != nil {
+var profile Profile
+
+func save(c gyper.Context) {
+	if err := c.Bind(&profile); err != nil {
 		fmt.Println(err.Error())
 	}
+	_ = c.JSON(http.StatusOK, profile)
+	// fmt.Println(profile.String())
+}
 
-	g.XML(http.StatusOK,profile)
-	fmt.Println(profile.String())
+func getValue(c gyper.Context) {
+	_ = c.JSON(http.StatusOK, profile)
 }

@@ -8,36 +8,36 @@ import (
 )
 
 func (c *Context) Bind(dataField any) error {
-	switch c.Request.Header["Content-Type"] {
-	case "application/json":	
-		if err := json.NewDecoder(c.Request.Body).Decode(dataField); err != nil {
-			return fmt.Errorf("failed to bind the request body to the provided struct")
+	switch c.request.Header["Content-Type"] {
+	case "application/json":
+		if err := json.NewDecoder(c.request.Body).Decode(dataField); err != nil {
+			return ErrBinding
 		}
 	case "application/xml":
-		if err := xml.NewDecoder(c.Request.Body).Decode(dataField); err != nil {
-			return fmt.Errorf("failed to bind the request body to the provided struct")
+		if err := xml.NewDecoder(c.request.Body).Decode(dataField); err != nil {
+			return ErrBinding
 		}
-	
-	}	
+	default:
+		return ErrBinding
+	}
 
-return nil
-
+	return nil
 }
 
 func (c *Context) JSON(statusCode int, data any) error {
 
-	response,err := json.Marshal(data)
+	response, err := json.Marshal(data)
 	if err != nil {
 		fmt.Println(err.Error())
 		return err
 	}
 
 	statusString := http.StatusText(statusCode)
-	switch c.Request.Protocol {
+	switch c.request.Protocol {
 	case HTTP1:
-		c.conn.Write([]byte(fmt.Sprintf("HTTP/1.1 %d %s\r\n",statusCode, statusString)))
+		c.conn.Write([]byte(fmt.Sprintf("HTTP/1.1 %d %s\r\n", statusCode, statusString)))
 	case HTTP2:
-		c.conn.Write([]byte(fmt.Sprintf("HTTP/2 %d %s\r\n",statusCode, statusString)))
+		c.conn.Write([]byte(fmt.Sprintf("HTTP/2 %d %s\r\n", statusCode, statusString)))
 	}
 	c.conn.Write([]byte("Content-Length: " + fmt.Sprint(len(response)) + "\r\n"))
 	c.conn.Write([]byte("Content-Type: application/json\r\n\r\n"))
@@ -48,18 +48,18 @@ func (c *Context) JSON(statusCode int, data any) error {
 
 func (c *Context) XML(statusCode int, data any) error {
 
-	response,err := xml.MarshalIndent(data, " ","	")
+	response, err := xml.MarshalIndent(data, " ", "	")
 	if err != nil {
 		fmt.Println(err.Error())
 		return err
 	}
 
 	statusString := http.StatusText(statusCode)
-	switch c.Request.Protocol {
+	switch c.request.Protocol {
 	case HTTP1:
-		c.conn.Write([]byte(fmt.Sprintf("HTTP/1.1 %d %s\r\n",statusCode, statusString)))
+		c.conn.Write([]byte(fmt.Sprintf("HTTP/1.1 %d %s\r\n", statusCode, statusString)))
 	case HTTP2:
-		c.conn.Write([]byte(fmt.Sprintf("HTTP/2 %d %s\r\n",statusCode, statusString)))
+		c.conn.Write([]byte(fmt.Sprintf("HTTP/2 %d %s\r\n", statusCode, statusString)))
 	}
 	c.conn.Write([]byte("Content-Length: " + fmt.Sprint(len(response)) + "\r\n"))
 	c.conn.Write([]byte("Content-Type: application/xml\r\n\r\n"))
